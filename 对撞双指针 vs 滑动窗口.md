@@ -67,37 +67,61 @@ void collisionTwoPointers(vector<int>& nums) {
 2. **不定长窗口（求最长）**：无重复字符的最长子串、最大连续1的个数。
 3. **不定长窗口（求最短）**：长度最小的子数组、最小覆盖子串。
 
+### ⚡️ 进阶技巧：增量计数法 (Incremental Update)
+
+痛点：每次移动指针后，遍历检查整个 window 是否满足条件（如 window == target）太慢，复杂度 $O(C \cdot N)$。
+
+优化：引入 valid_cnt 变量，只关注变化的那个字符。复杂度降为 $O(N)$。
+
+- **定义**：`cnt` = 当前窗口内已达标的字符**种类数**。
+- **进窗时**：`window[c]++;` $\to$ `if (window[c] == target[c]) cnt++;`
+- **出窗时**：`window[d]--;` $\to$ `if (window[d] < target[d]) cnt--;`
+- **判断**：`if (cnt == target.size())` 即为合法窗口。
+
 ### 🚀 C++ 标准模板 (万能版)
 
 不要去预判 `right+1`，永远处理当前的 `right`。
 
 ```c++
 int slidingWindow(string s) {
-    // 1. 定义窗口数据结构 (哈希表/数组/计数器)
-    // vector<int> window(128, 0); 或 unordered_map<char, int> map;
+    // 1. 定义窗口数据结构
+    unordered_map<char, int> window;
     
     int left = 0, right = 0;
-    int ans = 0; // 记录结果 (最大或最小)
+    int ans = 0; // 求最短时初始化为 INT_MAX
 
-    // 2. 主循环：右指针主动扩张 (老大带着跑)
+    // 2. 主循环：右指针主动扩张
     for (right = 0; right < s.size(); right++) {
         // 【A. 进】先把右边的元素加入窗口
         char c = s[right];
-        window.add(c);
+        window[c]++;
 
-        // 【B. 吐】只要窗口"坏了" (不满足条件)，左指针就被动收缩
-        // 例如：有重复字符、和超过target、窗口长度超限等
-        while (/* window needs shrink */) {
+        // ============ 分支一：求最长 (Longest) ============
+        // 逻辑：窗口坏了才收缩，收缩完肯定是好的，此时记录
+        while (/* 窗口不满足条件，例如重复了 */) {
             char d = s[left];
-            window.remove(d); // 移除左边元素
-            left++;           // 左边界右移
+            window[d]--;
+            left++;
         }
+        // [关键点]：在收缩之后更新 (此时窗口一定合法且最长)
+        ans = max(ans, right - left + 1);
 
-        // 【C. 算】此时窗口一定是合法的，更新结果
-        // 求最长：在 while 出来后更新 (因为此时是合法的最大状态)
-        // ans = max(ans, right - left + 1);
-        
-        // *求最短：通常在 while 循环内部，remove 之前更新 (一旦满足条件就尝试更短)
+
+        // ============ 分支二：求最短 (Shortest) ============
+        // 逻辑：窗口好了就赶紧记，记完尝试缩一下看能不能更短
+        /* while ( 窗口满足条件，例如覆盖了所有T ) {
+            // [关键点]：进 While 先记录！(此时窗口合法)
+            if (right - left + 1 < ans) {
+                ans = right - left + 1;
+                // update start_index if needed
+            }
+
+            // 尝试收缩 (吐出左边)
+            char d = s[left];
+            window[d]--;
+            left++;
+        }
+        */
     }
     return ans;
 }
